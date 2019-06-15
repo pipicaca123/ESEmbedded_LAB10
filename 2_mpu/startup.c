@@ -48,6 +48,8 @@ void reset_handler(void)
 void hardfault_handler(void)
 {
 	blink(LED_RED);
+	blink(LED_BLUE);
+	blink(LED_ORANGE);
 }
 
 /**

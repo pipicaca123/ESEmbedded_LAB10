@@ -29,14 +29,15 @@ int main(void)
 	printf("[Kernel] Switch to unprivileged thread mode & start user task (psp_init = 0x%x).\r\n\n", (unsigned int)psp_init);
 
 	//start user task
-	??????
+	start_user((uint32_t *)user_task,psp_init);
 
 	while (1) //should not go here
-		;
+		blink(LED_GREEN);
 }
 
 void user_task(void)
 {
+	blink(LED_GREEN);
 	printf("[User] Try to print something.\r\n\n");
 	blink(LED_BLUE); //should not return
 }
@@ -44,26 +45,32 @@ void user_task(void)
 void set_mpu(void)
 {
 	//set region 0: flash (0x00000000), 1MB, allow execution, full access, enable all subregion
-	??????
+	REG(MPU_BASE + MPU_RBAR_OFFSET) = MPU_RBAR_VALUE(0x00000000, 0);
+	REG(MPU_BASE+MPU_RASR_OFFSET)=MPU_RASR_VALUE(0, 0b011, 0b000010, 0, MPU_REGION_SIZE_1MB);
 
 	//set region 1: sram (0x20000000), 128KB, forbid execution, full access, enable all subregion
-	??????
+	REG(MPU_BASE + MPU_RBAR_OFFSET) = MPU_RBAR_VALUE(0x20000000, 1);
+	REG(MPU_BASE+MPU_RASR_OFFSET)=MPU_RASR_VALUE(1, 0b011, 0b000110, 0, MPU_REGION_SIZE_128KB);
 
-	//set region 2: RCC_AHB1ENR, 32B, forbid execution, full access, enable all subregion
-	??????
+
+	//set region 2: RCC_AHB1ENR, 32B, forbid execution, full access, enable all subregion-->屬於flash memory
+	REG(MPU_BASE + MPU_RBAR_OFFSET) = MPU_RBAR_VALUE(RCC_BASE+RCC_AHB1ENR_OFFSET, 2);
+	REG(MPU_BASE+MPU_RASR_OFFSET)=MPU_RASR_VALUE(1, 0b011, MPU_TYPE_PERIPHERALS, 0, MPU_REGION_SIZE_32B);
 
 	//set region 3: GPIOD, 32B, forbid execution, full access, enable all subregion
-	??????
+	REG(MPU_BASE + MPU_RBAR_OFFSET) = MPU_RBAR_VALUE(GPIO_BASE(GPIO_PORTD), 3);
+	REG(MPU_BASE+MPU_RASR_OFFSET)=MPU_RASR_VALUE(1, 0b011, MPU_TYPE_PERIPHERALS, 0, MPU_REGION_SIZE_32B);
 
 	//disable region 4 ~ 7
-	for (??????)
+	for(int i=3;i<=7;i++)
 	{
-		??????
+		REG(MPU_BASE + MPU_RBAR_OFFSET)=MPU_RBAR_VALUE(0x00000000, i);
+		REG(MPU_BASE + MPU_RASR_OFFSET) = 0;
 	}
 
 	//enable the default memory map as a background region for privileged access (PRIVDEFENA)
-	??????
+	SET_BIT(MPU_BASE+MPU_CTRL_OFFSET,MPU_PRIVDEFENA_BIT);
 
 	//enable mpu
-	??????
+	SET_BIT(MPU_BASE+MPU_CTRL_OFFSET,MPU_ENABLE_BIT);
 }
